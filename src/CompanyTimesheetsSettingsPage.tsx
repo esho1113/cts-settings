@@ -1,5 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
+  AttestationsSection,
+  INITIAL_ATTESTATION_QUESTIONS,
+} from './AttestationsSection'
+import {
   Badge,
   Box,
   Breadcrumbs,
@@ -11,10 +15,12 @@ import {
   Link,
   P,
   SettingsPage,
+  Switch,
   Table,
   Tabs,
   Title,
   Typography,
+  useField,
   useFormContext,
 } from '@procore/core-react'
 type SelectOption = { id: string; label: string }
@@ -48,11 +54,13 @@ export type TimesheetsSettingsFormValues = {
   enableRounding: boolean
   timeIncrement: SelectOption | null
   roundingDirection: SelectOption | null
-  requireLaborAttestation: boolean
   defaultCostTypeLabor: SelectOption | null
   defaultCostTypeEquipment: SelectOption | null
   applyLaborCostToExisting: boolean
   applyEquipmentCostToExisting: boolean
+  enableSignatureOnTimeEntries: boolean
+  requireSignatureOnTimeEntries: boolean
+  requireEmployeeAcknowledgementWhenSigning: boolean
   customSignatureText: string
 }
 
@@ -63,13 +71,14 @@ const defaultInitialValues: TimesheetsSettingsFormValues = {
   enableRounding: true,
   timeIncrement: TIME_INCREMENT_OPTIONS[0],
   roundingDirection: ROUNDING_DIRECTION_OPTIONS[0],
-  requireLaborAttestation: false,
   defaultCostTypeLabor: COST_TYPE_OPTIONS[0],
   defaultCostTypeEquipment: COST_TYPE_OPTIONS[1],
   applyLaborCostToExisting: false,
   applyEquipmentCostToExisting: false,
-  customSignatureText:
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+  enableSignatureOnTimeEntries: false,
+  requireSignatureOnTimeEntries: false,
+  requireEmployeeAcknowledgementWhenSigning: false,
+  customSignatureText: '',
 }
 
 type CostTypeRow = {
@@ -187,6 +196,89 @@ function TimesheetsSettingsFooter({ onCancel }: { onCancel: () => void }) {
         <Button type="submit">Save</Button>
       </SettingsPage.FooterActions>
     </Form.SettingsPageFooter>
+  )
+}
+
+type SignatureToggleName =
+  | 'enableSignatureOnTimeEntries'
+  | 'requireSignatureOnTimeEntries'
+  | 'requireEmployeeAcknowledgementWhenSigning'
+
+function SignatureSettingsToggleRow({
+  name,
+  label,
+  description,
+}: {
+  name: SignatureToggleName
+  label: string
+  description: string
+}) {
+  const { input, meta, helpers } = useField<boolean>({ name })
+  const id = `signature-setting-${name}`
+  return (
+    <Flex alignItems="flex-start" gap="md" marginBottom="lg">
+      <Box flexShrink={0} marginTop="xs">
+        <Switch
+          id={id}
+          name={name}
+          checked={Boolean(input.value)}
+          onChange={(e) => helpers.setValue(e.currentTarget.checked)}
+          disabled={meta.disabled}
+          aria-labelledby={`${id}-label`}
+        />
+      </Box>
+      <Box flex={1} style={{ minWidth: 0 }}>
+        <Typography
+          id={`${id}-label`}
+          intent="label"
+          weight="semibold"
+          as="div"
+        >
+          {label}
+        </Typography>
+        <Box marginTop="xs">
+          <Typography intent="body" color="gray40" as="div">
+            {description}
+          </Typography>
+        </Box>
+      </Box>
+    </Flex>
+  )
+}
+
+function SignatureSettingsFields() {
+  const { values } = useFormContext<TimesheetsSettingsFormValues>()
+  return (
+    <>
+      <SignatureSettingsToggleRow
+        name="enableSignatureOnTimeEntries"
+        label="Enable signature on time entries"
+        description="Turn on signature-related options for time entries."
+      />
+      {values.enableSignatureOnTimeEntries && (
+        <Box marginTop="lg" paddingTop="lg">
+          <SignatureSettingsToggleRow
+            name="requireSignatureOnTimeEntries"
+            label="Require Signature on Time Entries"
+            description="Employees will not be able to submit their time entry without signing their time entry."
+          />
+          <SignatureSettingsToggleRow
+            name="requireEmployeeAcknowledgementWhenSigning"
+            label="Require employee acknowledgement when signing time entries"
+            description="Employees who sign time entries created by others must certify that they are signing for their own time."
+          />
+          <Box marginBottom="lg">
+            <Form.TextArea
+              name="customSignatureText"
+              label="Custom Signature Text"
+              description="Show employees a custom message when signing a time entry."
+              resize="vertical"
+              rows={6}
+            />
+          </Box>
+        </Box>
+      )}
+    </>
   )
 }
 
@@ -308,6 +400,9 @@ export function CompanyTimesheetsSettingsPage() {
     useState<TimesheetsSettingsTab>('shared')
   const [costTypeRows, setCostTypeRows] =
     useState<CostTypeRow[]>(initialCostTypeRows)
+  const [attestationQuestions, setAttestationQuestions] = useState(
+    () => INITIAL_ATTESTATION_QUESTIONS,
+  )
 
   const handleCostToggle = useCallback(
     (id: string, field: 'laborChecked' | 'equipmentChecked', next: boolean) => {
@@ -324,11 +419,12 @@ export function CompanyTimesheetsSettingsPage() {
         window.setTimeout(() => {
           void values
           void costTypeRows
+          void attestationQuestions
           resolve()
         }, 400)
       })
     },
-    [costTypeRows],
+    [attestationQuestions, costTypeRows],
   )
 
   const initialValues = useMemo(() => ({ ...defaultInitialValues }), [])
@@ -440,35 +536,39 @@ export function CompanyTimesheetsSettingsPage() {
                         heading="General Settings"
                         subtext="The following settings apply to Timecard, Timesheets and Daily Log."
                       >
-                        <Box marginBottom="lg">
-                          <Typography intent="h3" weight="semibold">
-                            Employee Tracking on Projects
-                          </Typography>
-                          <Box marginTop="sm" marginBottom="md">
-                            <Form.Checkbox
-                              name="trackEmployeesOnAllProjects"
-                              inlineLabel="Track company employees on all projects"
-                            />
+                        <SettingsPage.Section>
+                          <Box marginBottom="lg">
+                            <Typography intent="h3" weight="semibold">
+                              Employee Tracking on Projects
+                            </Typography>
+                            <Box marginTop="sm" marginBottom="md">
+                              <Form.Checkbox
+                                name="trackEmployeesOnAllProjects"
+                                inlineLabel="Track company employees on all projects"
+                              />
+                            </Box>
                           </Box>
-                        </Box>
+                        </SettingsPage.Section>
 
-                        <Box>
-                          <Typography intent="h3" weight="semibold">
-                            Crew Availability Across Projects
-                          </Typography>
-                          <Box marginTop="sm" marginBottom="sm">
-                            <P>
-                              Employees with the appropriate permissions will be
-                              able to copy their crews across projects.
-                            </P>
+                        <SettingsPage.Section>
+                          <Box>
+                            <Typography intent="h3" weight="semibold">
+                              Crew Availability Across Projects
+                            </Typography>
+                            <Box marginTop="sm" marginBottom="sm">
+                              <P>
+                                Employees with the appropriate permissions will be
+                                able to copy their crews across projects.
+                              </P>
+                            </Box>
+                            <Box marginBottom="md">
+                              <Form.Checkbox
+                                name="allowCrewsCopiedAcrossProjects"
+                                inlineLabel="Allow crews to be copied across projects"
+                              />
+                            </Box>
                           </Box>
-                          <Box marginBottom="md">
-                            <Form.Checkbox
-                              name="allowCrewsCopiedAcrossProjects"
-                              inlineLabel="Allow crews to be copied across projects"
-                            />
-                          </Box>
-                        </Box>
+                        </SettingsPage.Section>
                       </SettingsPage.Section>
                     </SettingsPage.Card>
 
@@ -477,46 +577,50 @@ export function CompanyTimesheetsSettingsPage() {
                       navigationLabel="Time Entry Settings"
                     >
                       <SettingsPage.Section heading="Time Entry Settings">
-                        <Box marginBottom="lg">
-                          <Typography intent="h3" weight="semibold">
-                            Privacy
-                          </Typography>
-                          <Box marginTop="sm" marginBottom="sm">
-                            <P>
-                              Private timecards are only visible to the creator of
-                              the timecard, the employee for whom the time is being
-                              tracked, and admins of the tools.
-                            </P>
+                        <SettingsPage.Section>
+                          <Box marginBottom="lg">
+                            <Typography intent="h3" weight="semibold">
+                              Privacy
+                            </Typography>
+                            <Box marginTop="sm" marginBottom="sm">
+                              <P>
+                                Private timecards are only visible to the creator of
+                                the timecard, the employee for whom the time is being
+                                tracked, and admins of the tools.
+                              </P>
+                            </Box>
+                            <Box marginBottom="md">
+                              <Form.Checkbox
+                                name="privateTimecardsByDefault"
+                                inlineLabel="Make timecards private by default"
+                              />
+                            </Box>
                           </Box>
-                          <Box marginBottom="md">
-                            <Form.Checkbox
-                              name="privateTimecardsByDefault"
-                              inlineLabel="Make timecards private by default"
-                            />
-                          </Box>
-                        </Box>
+                        </SettingsPage.Section>
 
-                        <Box>
-                          <Typography intent="h3" weight="semibold">
-                            Rounding
-                          </Typography>
-                          <Box marginTop="sm" marginBottom="sm">
-                            <P>
-                              Rounding rules will apply to all projects and time
-                              formats (Start/Stop and Total Hours) and will change
-                              all time pickers to conform to the selected time
-                              increment. Please ensure that any rounding rules you
-                              define comply with applicable laws and regulations.
-                            </P>
+                        <SettingsPage.Section>
+                          <Box>
+                            <Typography intent="h3" weight="semibold">
+                              Rounding
+                            </Typography>
+                            <Box marginTop="sm" marginBottom="sm">
+                              <P>
+                                Rounding rules will apply to all projects and time
+                                formats (Start/Stop and Total Hours) and will change
+                                all time pickers to conform to the selected time
+                                increment. Please ensure that any rounding rules you
+                                define comply with applicable laws and regulations.
+                              </P>
+                            </Box>
+                            <Box marginBottom="md">
+                              <Form.Checkbox
+                                name="enableRounding"
+                                inlineLabel="Enable Rounding on Timecards"
+                              />
+                            </Box>
+                            <RoundingSelectRow />
                           </Box>
-                          <Box marginBottom="md">
-                            <Form.Checkbox
-                              name="enableRounding"
-                              inlineLabel="Enable Rounding on Timecards"
-                            />
-                          </Box>
-                          <RoundingSelectRow />
-                        </Box>
+                        </SettingsPage.Section>
                       </SettingsPage.Section>
                     </SettingsPage.Card>
 
@@ -524,16 +628,8 @@ export function CompanyTimesheetsSettingsPage() {
                       id="signature-settings"
                       navigationLabel="Signature Settings"
                     >
-                      <SettingsPage.Section
-                        heading="Signature Settings"
-                        subtext="Text shown to employees when they sign or attest to time entries."
-                      >
-                        <Form.TextArea
-                          name="customSignatureText"
-                          label="Custom Signature Text"
-                          resize="vertical"
-                          rows={6}
-                        />
+                      <SettingsPage.Section heading="Signature Settings">
+                        <SignatureSettingsFields />
                       </SettingsPage.Section>
                     </SettingsPage.Card>
 
@@ -542,16 +638,9 @@ export function CompanyTimesheetsSettingsPage() {
                       navigationLabel="Attestations"
                     >
                       <SettingsPage.Section heading="Attestations">
-                        <Box marginBottom="sm">
-                          <P>
-                            Labor attestations help confirm that recorded time is
-                            accurate. When enabled, workers may be prompted to
-                            attest according to your company policy.
-                          </P>
-                        </Box>
-                        <Form.Checkbox
-                          name="requireLaborAttestation"
-                          inlineLabel="Require labor attestation for time entries"
+                        <AttestationsSection
+                          questions={attestationQuestions}
+                          onQuestionsChange={setAttestationQuestions}
                         />
                       </SettingsPage.Section>
                     </SettingsPage.Card>
@@ -570,54 +659,56 @@ export function CompanyTimesheetsSettingsPage() {
                         </Box>
                       </SettingsPage.Section>
 
-                      <Typography intent="h3" weight="semibold">
-                        Default Cost Type for Timecards
-                      </Typography>
-                      <Box marginTop="sm" marginBottom="md">
-                        <P>
-                          This configuration will assign the selected cost type to
-                          timecard entries for real-time visibility into labor costs
-                          in the budget tool.
-                        </P>
-                      </Box>
+                      <SettingsPage.Section>
+                        <Typography intent="h3" weight="semibold">
+                          Default Cost Type for Timecards
+                        </Typography>
+                        <Box marginTop="sm" marginBottom="md">
+                          <P>
+                            This configuration will assign the selected cost type to
+                            timecard entries for real-time visibility into labor costs
+                            in the budget tool.
+                          </P>
+                        </Box>
 
-                      <Form.Row>
-                        <Form.Select
-                          name="defaultCostTypeLabor"
-                          label="Cost Type for Labor Time Entries"
-                          options={COST_TYPE_OPTIONS}
-                          getId={getId}
-                          getLabel={getLabel}
-                          colStart={1}
-                          colWidth={6}
-                          onSearch={false}
-                        />
-                      </Form.Row>
-                      <Box marginBottom="lg">
-                        <Form.Checkbox
-                          name="applyLaborCostToExisting"
-                          inlineLabel="Apply to existing timecards"
-                        />
-                      </Box>
+                        <Form.Row>
+                          <Form.Select
+                            name="defaultCostTypeLabor"
+                            label="Cost Type for Labor Time Entries"
+                            options={COST_TYPE_OPTIONS}
+                            getId={getId}
+                            getLabel={getLabel}
+                            colStart={1}
+                            colWidth={6}
+                            onSearch={false}
+                          />
+                        </Form.Row>
+                        <Box marginBottom="lg">
+                          <Form.Checkbox
+                            name="applyLaborCostToExisting"
+                            inlineLabel="Apply to existing timecards"
+                          />
+                        </Box>
 
-                      <Form.Row>
-                        <Form.Select
-                          name="defaultCostTypeEquipment"
-                          label="Cost Type for Equipment Time Entries"
-                          options={COST_TYPE_OPTIONS}
-                          getId={getId}
-                          getLabel={getLabel}
-                          colStart={1}
-                          colWidth={6}
-                          onSearch={false}
-                        />
-                      </Form.Row>
-                      <Box marginBottom="lg">
-                        <Form.Checkbox
-                          name="applyEquipmentCostToExisting"
-                          inlineLabel="Apply to existing timecards"
-                        />
-                      </Box>
+                        <Form.Row>
+                          <Form.Select
+                            name="defaultCostTypeEquipment"
+                            label="Cost Type for Equipment Time Entries"
+                            options={COST_TYPE_OPTIONS}
+                            getId={getId}
+                            getLabel={getLabel}
+                            colStart={1}
+                            colWidth={6}
+                            onSearch={false}
+                          />
+                        </Form.Row>
+                        <Box marginBottom="lg">
+                          <Form.Checkbox
+                            name="applyEquipmentCostToExisting"
+                            inlineLabel="Apply to existing timecards"
+                          />
+                        </Box>
+                      </SettingsPage.Section>
                     </SettingsPage.Section>
                   </SettingsPage.Card>
                 )}
@@ -643,7 +734,10 @@ export function CompanyTimesheetsSettingsPage() {
             </SettingsPage.Body>
 
             <TimesheetsSettingsFooter
-              onCancel={() => setCostTypeRows(initialCostTypeRows)}
+              onCancel={() => {
+                setCostTypeRows(initialCostTypeRows)
+                setAttestationQuestions(INITIAL_ATTESTATION_QUESTIONS)
+              }}
             />
           </SettingsPage.Main>
         </SettingsPage>
