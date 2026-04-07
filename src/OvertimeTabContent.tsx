@@ -8,6 +8,7 @@ import {
   Switch,
   Table,
   Typography,
+  colors,
   useField,
   useFormContext,
 } from '@procore/core-react'
@@ -61,6 +62,10 @@ function OvertimeSwitchRow({
     </Flex>
   )
 }
+
+const overtimeSettingsDividerStyle = {
+  borderTop: `1px solid ${colors.gray85}`,
+} as const
 
 const COMPANY_DEFAULT_RULE_LINES = [
   'Weekly overtime will apply after 40 hours',
@@ -161,7 +166,11 @@ export function OvertimeTabContent({
 
           {values.enableOvertimeManagement && (
             <>
-              <Box marginTop="lg" paddingTop="lg">
+              <Box
+                marginTop="lg"
+                paddingTop="lg"
+                style={overtimeSettingsDividerStyle}
+              >
                 <Typography intent="h3" weight="semibold" as="div">
                   Creating Time Entries
                 </Typography>
@@ -180,7 +189,11 @@ export function OvertimeTabContent({
                 />
               </Box>
 
-              <Box marginTop="lg" paddingTop="lg">
+              <Box
+                marginTop="lg"
+                paddingTop="lg"
+                style={overtimeSettingsDividerStyle}
+              >
                 <Typography intent="h3" weight="semibold" as="div">
                   Custom Field Handling
                 </Typography>
