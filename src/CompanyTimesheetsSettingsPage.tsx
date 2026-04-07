@@ -1,8 +1,19 @@
-import { useCallback, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react'
 import {
   AttestationsSection,
   INITIAL_ATTESTATION_QUESTIONS,
 } from './AttestationsSection'
+import {
+  INITIAL_OVERTIME_PROJECT_RULES,
+  OvertimeTabContent,
+  type OvertimeProjectRuleRow,
+} from './OvertimeTabContent'
 import {
   INITIAL_PAYROLL_EMAIL_SELECTION,
   INITIAL_PAYROLL_TIME_TYPES,
@@ -76,6 +87,9 @@ export type TimesheetsSettingsFormValues = {
   payrollEmailDistribution: SelectOption[]
   payrollLateSubmissionMessage: string
   payrollSoftware: SelectOption | null
+  enableOvertimeManagement: boolean
+  overtimeAutoApplyWhenCreating: boolean
+  overtimeExcludeCustomFieldsFromSplitting: boolean
 }
 
 const defaultInitialValues: TimesheetsSettingsFormValues = {
@@ -102,6 +116,9 @@ const defaultInitialValues: TimesheetsSettingsFormValues = {
     'You are trying to create time in a closed pay period, you better not do that unless you wanna be a bad bad construction worker',
   payrollSoftware:
     PAYROLL_SOFTWARE_OPTIONS.find((o) => o.id === 'qb-desktop') ?? null,
+  enableOvertimeManagement: true,
+  overtimeAutoApplyWhenCreating: true,
+  overtimeExcludeCustomFieldsFromSplitting: false,
 }
 
 type CostTypeRow = {
@@ -418,6 +435,39 @@ type TimesheetsSettingsTab =
   | 'payroll'
   | 'overtime'
 
+/**
+ * Reset scroll so tab switches show the top of the tab content.
+ * Matches index.css: with side nav, nav + content columns scroll separately;
+ * without side nav (Configurations / Overtime), the body row itself scrolls.
+ */
+function scrollSettingsPageScrollContainersToTop() {
+  const page = document.querySelector<HTMLElement>(
+    '[data-core-react="settings-page"]',
+  )
+  if (!page) return
+
+  const root = page.querySelector<HTMLElement>('[data-core-page-layout-root]')
+  if (!root) return
+
+  const bodyRow = root.children[1] as HTMLElement | undefined
+  if (!bodyRow) return
+
+  if (page.hasAttribute('data-settings-shared-nav')) {
+    const nav = bodyRow.firstElementChild as HTMLElement | null
+    const content = bodyRow.lastElementChild as HTMLElement | null
+    if (nav && bodyRow.childElementCount >= 2) {
+      nav.scrollTop = 0
+    }
+    if (content) {
+      content.scrollTop = 0
+    }
+  } else {
+    bodyRow.scrollTop = 0
+  }
+
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
+}
+
 export function CompanyTimesheetsSettingsPage() {
   const [activeTab, setActiveTab] =
     useState<TimesheetsSettingsTab>('shared')
@@ -430,6 +480,9 @@ export function CompanyTimesheetsSettingsPage() {
     PayrollTimeTypeRow[]
   >(() => [...INITIAL_PAYROLL_TIME_TYPES])
   const [payrollExportFiles, setPayrollExportFiles] = useState<File[]>([])
+  const [overtimeProjectRules, setOvertimeProjectRules] = useState<
+    OvertimeProjectRuleRow[]
+  >(() => [...INITIAL_OVERTIME_PROJECT_RULES])
 
   const handleCostToggle = useCallback(
     (id: string, field: 'laborChecked' | 'equipmentChecked', next: boolean) => {
@@ -449,6 +502,7 @@ export function CompanyTimesheetsSettingsPage() {
           void attestationQuestions
           void payrollTimeTypeRows
           void payrollExportFiles
+          void overtimeProjectRules
           resolve()
         }, 400)
       })
@@ -458,10 +512,60 @@ export function CompanyTimesheetsSettingsPage() {
       costTypeRows,
       payrollExportFiles,
       payrollTimeTypeRows,
+      overtimeProjectRules,
     ],
   )
 
   const initialValues = useMemo(() => ({ ...defaultInitialValues }), [])
+
+  const hasSideNavigation =
+    activeTab === 'shared' || activeTab === 'payroll'
+
+  useLayoutEffect(() => {
+    const run = () => scrollSettingsPageScrollContainersToTop()
+    run()
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(run)
+    })
+    const delayed = window.setTimeout(run, 100)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.clearTimeout(delayed)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    const run = () => scrollSettingsPageScrollContainersToTop()
+    const t = window.setTimeout(run, 0)
+    return () => window.clearTimeout(t)
+  }, [activeTab])
+
+  /**
+   * Form.Select uses OverlayTrigger, which focuses its trigger on mount when the
+   * menu is closed; the last select in the tab panel wins (e.g. Rounding direction
+   * on Shared, Payroll Software on Payroll). Move focus to the first card heading
+   * instead. setTimeout(0) runs after child effects and after the scroll effect’s
+   * setTimeout(0).
+   */
+  useEffect(() => {
+    const firstCardId =
+      activeTab === 'shared'
+        ? 'general-settings'
+        : activeTab === 'payroll'
+          ? 'payroll-settings'
+          : null
+    if (!firstCardId) return
+    const t = window.setTimeout(() => {
+      const card = document.getElementById(firstCardId)
+      const heading = card?.querySelector('h1, h2, h3')
+      if (!(heading instanceof HTMLElement)) return
+      if (!heading.hasAttribute('tabindex')) {
+        heading.setAttribute('tabindex', '-1')
+      }
+      heading.focus({ preventScroll: true })
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [activeTab])
 
   return (
     <Form<TimesheetsSettingsFormValues>
@@ -482,8 +586,8 @@ export function CompanyTimesheetsSettingsPage() {
       >
         <SettingsPage
           width="block"
-          hasNavigation={activeTab === 'shared'}
-          {...(activeTab === 'shared'
+          hasNavigation={hasSideNavigation}
+          {...(hasSideNavigation
             ? { 'data-settings-shared-nav': true as const }
             : {})}
           style={{
@@ -757,14 +861,10 @@ export function CompanyTimesheetsSettingsPage() {
                 )}
 
                 {activeTab === 'overtime' && (
-                  <SettingsPage.Card navigationLabel="Overtime Management">
-                    <SettingsPage.Section heading="Overtime Management">
-                      <P>
-                        Overtime management settings are not included in this
-                        prototype.
-                      </P>
-                    </SettingsPage.Section>
-                  </SettingsPage.Card>
+                  <OvertimeTabContent
+                    projectRules={overtimeProjectRules}
+                    onProjectRulesChange={setOvertimeProjectRules}
+                  />
                 )}
             </SettingsPage.Body>
 
@@ -774,6 +874,7 @@ export function CompanyTimesheetsSettingsPage() {
                 setAttestationQuestions(INITIAL_ATTESTATION_QUESTIONS)
                 setPayrollTimeTypeRows([...INITIAL_PAYROLL_TIME_TYPES])
                 setPayrollExportFiles([])
+                setOvertimeProjectRules([...INITIAL_OVERTIME_PROJECT_RULES])
               }}
             />
           </SettingsPage.Main>

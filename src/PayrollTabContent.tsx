@@ -315,7 +315,7 @@ function TimeTypesTable({
 
 function PayrollSettingsSection() {
   return (
-    <SettingsPage.Card navigationLabel="Payroll settings">
+    <SettingsPage.Card id="payroll-settings" navigationLabel="Payroll settings">
       <SettingsPage.Section
         heading="Payroll Settings"
         subtext="Configure timekeeping to adhere to your company policies and payroll solution."
@@ -375,7 +375,10 @@ function ManageTimeTypesSection({
   onTimeTypeRowsChange,
 }: Pick<PayrollTabContentProps, 'timeTypeRows' | 'onTimeTypeRowsChange'>) {
   return (
-    <SettingsPage.Card navigationLabel="Manage time types">
+    <SettingsPage.Card
+      id="payroll-manage-time-types"
+      navigationLabel="Manage time types"
+    >
       <SettingsPage.Section
         heading="Manage Time Types"
         subtext="Select which time types your workers can choose when logging their timesheets. You can also add more time types."
@@ -395,7 +398,7 @@ function PayrollExportSection({
   'payrollExportFiles' | 'onPayrollExportFilesChange'
 > & { exportInstructions: ReactNode }) {
   return (
-    <SettingsPage.Card navigationLabel="Payroll export">
+    <SettingsPage.Card id="payroll-export" navigationLabel="Payroll export">
       <SettingsPage.Section heading="Payroll Export Settings">
         <Form.Row>
           <Form.Select
@@ -434,20 +437,26 @@ export function PayrollTabContent({
 }: PayrollTabContentProps) {
   const exportInstructions = useMemo(
     () => (
-      <Box marginTop="md">
-        <P>
-          <Link href="#payroll-export-step-1">Step 1: Export Time as an IIF file</Link>
-          {' — '}
-          download the file and import it into QuickBooks Desktop.
-        </P>
-        <Box marginTop="sm">
+      <>
+        <Box id="payroll-export-step-1" marginTop="md" tabIndex={-1}>
           <P>
-            <Link href="#payroll-export-step-2">Step 2: Map the Time Types</Link>
+            <Link href="#payroll-export-step-1">
+              Step 1: Export Time as an IIF file
+            </Link>
+            {' — '}
+            download the file and import it into QuickBooks Desktop.
+          </P>
+        </Box>
+        <Box id="payroll-export-step-2" marginTop="sm" tabIndex={-1}>
+          <P>
+            <Link href="#payroll-export-step-2">
+              Step 2: Map the Time Types
+            </Link>
             {' — '}
             align Procore time types with your QuickBooks payroll items.
           </P>
         </Box>
-      </Box>
+      </>
     ),
     [],
   )

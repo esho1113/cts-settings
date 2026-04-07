@@ -38,7 +38,7 @@ body {
 
 /*
  * Settings page: fill viewport below app chrome; inner body scrolls.
- * Shared Settings: anchor column sticky in the row; only StyledContent scrolls horizontally-tall cards.
+ * Shared / Payroll tabs: anchor column sticky in the row; only StyledContent scrolls tall cards.
  * DOM: Main > StyledBody > [StyledNavigation | StyledContent > Grid… > cards]
  */
 [data-core-react='settings-page'] > div {
