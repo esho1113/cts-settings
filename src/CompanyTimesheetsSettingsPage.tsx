@@ -4,6 +4,15 @@ import {
   INITIAL_ATTESTATION_QUESTIONS,
 } from './AttestationsSection'
 import {
+  INITIAL_PAYROLL_EMAIL_SELECTION,
+  INITIAL_PAYROLL_TIME_TYPES,
+  PAY_PERIOD_OPTIONS,
+  PAYROLL_SOFTWARE_OPTIONS,
+  PayrollTabContent,
+  WORK_WEEK_OPTIONS,
+  type PayrollTimeTypeRow,
+} from './PayrollTabContent'
+import {
   Badge,
   Box,
   Breadcrumbs,
@@ -62,6 +71,11 @@ export type TimesheetsSettingsFormValues = {
   requireSignatureOnTimeEntries: boolean
   requireEmployeeAcknowledgementWhenSigning: boolean
   customSignatureText: string
+  payrollDefaultWorkWeek: SelectOption | null
+  payrollPayPeriodFrequency: SelectOption | null
+  payrollEmailDistribution: SelectOption[]
+  payrollLateSubmissionMessage: string
+  payrollSoftware: SelectOption | null
 }
 
 const defaultInitialValues: TimesheetsSettingsFormValues = {
@@ -79,6 +93,15 @@ const defaultInitialValues: TimesheetsSettingsFormValues = {
   requireSignatureOnTimeEntries: false,
   requireEmployeeAcknowledgementWhenSigning: false,
   customSignatureText: '',
+  payrollDefaultWorkWeek:
+    WORK_WEEK_OPTIONS.find((o) => o.id === 'tue-mon') ?? null,
+  payrollPayPeriodFrequency:
+    PAY_PERIOD_OPTIONS.find((o) => o.id === 'weekly') ?? null,
+  payrollEmailDistribution: INITIAL_PAYROLL_EMAIL_SELECTION,
+  payrollLateSubmissionMessage:
+    'You are trying to create time in a closed pay period, you better not do that unless you wanna be a bad bad construction worker',
+  payrollSoftware:
+    PAYROLL_SOFTWARE_OPTIONS.find((o) => o.id === 'qb-desktop') ?? null,
 }
 
 type CostTypeRow = {
@@ -403,6 +426,10 @@ export function CompanyTimesheetsSettingsPage() {
   const [attestationQuestions, setAttestationQuestions] = useState(
     () => INITIAL_ATTESTATION_QUESTIONS,
   )
+  const [payrollTimeTypeRows, setPayrollTimeTypeRows] = useState<
+    PayrollTimeTypeRow[]
+  >(() => [...INITIAL_PAYROLL_TIME_TYPES])
+  const [payrollExportFiles, setPayrollExportFiles] = useState<File[]>([])
 
   const handleCostToggle = useCallback(
     (id: string, field: 'laborChecked' | 'equipmentChecked', next: boolean) => {
@@ -420,11 +447,18 @@ export function CompanyTimesheetsSettingsPage() {
           void values
           void costTypeRows
           void attestationQuestions
+          void payrollTimeTypeRows
+          void payrollExportFiles
           resolve()
         }, 400)
       })
     },
-    [attestationQuestions, costTypeRows],
+    [
+      attestationQuestions,
+      costTypeRows,
+      payrollExportFiles,
+      payrollTimeTypeRows,
+    ],
   )
 
   const initialValues = useMemo(() => ({ ...defaultInitialValues }), [])
@@ -714,11 +748,12 @@ export function CompanyTimesheetsSettingsPage() {
                 )}
 
                 {activeTab === 'payroll' && (
-                  <SettingsPage.Card navigationLabel="Payroll">
-                    <SettingsPage.Section heading="Payroll">
-                      <P>Payroll settings are not included in this prototype.</P>
-                    </SettingsPage.Section>
-                  </SettingsPage.Card>
+                  <PayrollTabContent
+                    timeTypeRows={payrollTimeTypeRows}
+                    onTimeTypeRowsChange={setPayrollTimeTypeRows}
+                    payrollExportFiles={payrollExportFiles}
+                    onPayrollExportFilesChange={setPayrollExportFiles}
+                  />
                 )}
 
                 {activeTab === 'overtime' && (
@@ -737,6 +772,8 @@ export function CompanyTimesheetsSettingsPage() {
               onCancel={() => {
                 setCostTypeRows(initialCostTypeRows)
                 setAttestationQuestions(INITIAL_ATTESTATION_QUESTIONS)
+                setPayrollTimeTypeRows([...INITIAL_PAYROLL_TIME_TYPES])
+                setPayrollExportFiles([])
               }}
             />
           </SettingsPage.Main>
