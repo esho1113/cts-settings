@@ -24,7 +24,6 @@ import {
   type PayrollTimeTypeRow,
 } from './PayrollTabContent'
 import {
-  Badge,
   Box,
   Breadcrumbs,
   Button,
@@ -34,6 +33,7 @@ import {
   H1,
   Link,
   P,
+  Pill,
   SettingsPage,
   Switch,
   Table,
@@ -656,7 +656,16 @@ export function CompanyTimesheetsSettingsPage() {
                   >
                     <Flex inline alignItems="center" gap="xs">
                       <Tabs.Link>Overtime Management</Tabs.Link>
-                      <Badge>Beta</Badge>
+                      <Pill
+                        color="magenta"
+                        style={{
+                          padding: '2px 8px',
+                          backgroundColor: '#F9E6F6',
+                          borderColor: '#F0C2E8',
+                        }}
+                      >
+                        Beta
+                      </Pill>
                     </Flex>
                   </Tabs.Tab>
                 </Tabs>
