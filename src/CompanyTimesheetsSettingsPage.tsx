@@ -336,7 +336,7 @@ function RoundingSelectRow() {
         getId={getId}
         getLabel={getLabel}
         colStart={1}
-        colWidth={6}
+        colWidth={3}
         placeholder="Select increment"
         onSearch={false}
       />
@@ -346,8 +346,8 @@ function RoundingSelectRow() {
         options={ROUNDING_DIRECTION_OPTIONS}
         getId={getId}
         getLabel={getLabel}
-        colStart={7}
-        colWidth={6}
+        colStart={4}
+        colWidth={3}
         placeholder="Select direction"
         onSearch={false}
         tooltip="Time entries will be rounded in this direction to the selected increment. Ensure this complies with applicable laws and regulations."

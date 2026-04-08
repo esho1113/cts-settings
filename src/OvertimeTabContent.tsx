@@ -336,7 +336,13 @@ export function OvertimeTabContent({
               <Table.Body>
                 {projectRules.map((row) => (
                   <Table.BodyRow key={row.id}>
-                    <Table.BodyCell style={{ verticalAlign: 'middle' }}>
+                    <Table.BodyCell
+                      style={{
+                        verticalAlign: 'middle',
+                        paddingLeft: '16px',
+                        paddingRight: '16px',
+                      }}
+                    >
                       <Button type="button" variant="secondary">
                         Edit
                       </Button>
