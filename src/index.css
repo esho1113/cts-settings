@@ -114,9 +114,8 @@ body {
 }
 
 /*
- * DetailPage/SettingsPage Section (StyledSection): padding-bottom uses spacing.lg (16px) in core-react.
- * Override for level-2 sections to match design (32px).
+ * DetailPage Section (StyledSection) with section--level-2: bottom padding per design.
  */
 [data-core-react='settings-page'] .section--level-2 {
-  padding-bottom: 32px;
+  padding-bottom: 16px;
 }

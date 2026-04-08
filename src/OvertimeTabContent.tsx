@@ -105,7 +105,14 @@ export const INITIAL_OVERTIME_PROJECT_RULES: OvertimeProjectRuleRow[] = [
 
 function RulesBulletList({ lines }: { lines: string[] }) {
   return (
-    <Box as="ul" paddingLeft="lg" style={{ margin: 0, marginBlock: 0 }}>
+    <Box
+      as="ul"
+      paddingLeft="lg"
+      paddingTop="sm"
+      paddingBottom="sm"
+      paddingRight="lg"
+      style={{ margin: 0, marginBlock: 0 }}
+    >
       {lines.map((line) => (
         <Box as="li" key={line} marginBottom="xs">
           <Typography intent="body" as="span">
@@ -234,7 +241,13 @@ export function OvertimeTabContent({
               </Table.Header>
               <Table.Body>
                 <Table.BodyRow>
-                  <Table.BodyCell style={{ verticalAlign: 'middle' }}>
+                  <Table.BodyCell
+                    style={{
+                      verticalAlign: 'middle',
+                      paddingLeft: '16px',
+                      paddingRight: '16px',
+                    }}
+                  >
                     <Button type="button" variant="secondary">
                       Edit
                     </Button>
@@ -274,7 +287,13 @@ export function OvertimeTabContent({
               </Table.Header>
               <Table.Body>
                 <Table.BodyRow>
-                  <Table.BodyCell style={{ verticalAlign: 'middle' }}>
+                  <Table.BodyCell
+                    style={{
+                      verticalAlign: 'middle',
+                      paddingLeft: '16px',
+                      paddingRight: '16px',
+                    }}
+                  >
                     <Button type="button" variant="secondary">
                       Edit
                     </Button>
@@ -325,7 +344,9 @@ export function OvertimeTabContent({
                     <Table.BodyCell>
                       <Table.TextCell>{row.name}</Table.TextCell>
                     </Table.BodyCell>
-                    <Table.BodyCell>
+                    <Table.BodyCell
+                      style={{ paddingTop: 8, paddingBottom: 8 }}
+                    >
                       <RulesBulletList lines={row.rules} />
                     </Table.BodyCell>
                     <Table.BodyCell>
